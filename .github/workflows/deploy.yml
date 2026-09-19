@@ -29,10 +29,14 @@ jobs:
       # the Hugo image is Alpine/musl and the runner's injected Node would
       # not execute inside it, breaking every JavaScript action.
       - name: Build
-        run: >
-          docker compose run --rm -T
-          -e HUGO_ENVIRONMENT=production
-          hugo --gc --minify
+        run: |
+          # The Hugo image runs as uid 1000. The runner checks out as uid
+          # 1001, so without this the container cannot write .hugo_build.lock
+          # or public/ into the bind-mounted workspace. Handing ownership to
+          # 1000 keeps the container identical to a local run, rather than
+          # running it as 1001 and having to relocate /go/pkg/mod and /cache.
+          sudo chown -R 1000:1000 .
+          docker compose run --rm -T -e HUGO_ENVIRONMENT=production hugo --gc --minify
 
       - uses: actions/upload-pages-artifact@v3
         with:
