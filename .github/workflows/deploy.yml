@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege token: only what the Pages deployment needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let an in-flight deploy finish; queue at most one more.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      # Same compose.yaml as local, so the Hugo version is pinned in exactly
+      # one place. Runs as a step rather than a job `container:` on purpose:
+      # the Hugo image is Alpine/musl and the runner's injected Node would
+      # not execute inside it, breaking every JavaScript action.
+      - name: Build
+        run: >
+          docker compose run --rm -T
+          -e HUGO_ENVIRONMENT=production
+          hugo --gc --minify
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

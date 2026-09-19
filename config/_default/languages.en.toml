@@ -1,0 +1,20 @@
+locale = "en-GB"
+label = "English"
+direction = "ltr"
+weight = 1
+
+title = "dil4rd"
+
+[params]
+  dateFormat = "2 January 2006"
+  description = "Personal site and blog."
+  mainSections = ["posts"]
+
+[params.author]
+  name = "dil4rd"
+  headline = ""
+  bio = "Notes on things I'm building and learning."
+  links = [
+    { github = "https://github.com/dil4rd" },
+    { email = "mailto:dil4rd.skills@gmail.com" },
+  ]

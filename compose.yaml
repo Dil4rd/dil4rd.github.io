@@ -1,0 +1,71 @@
+# Hugo toolchain runs in a container so the version is pinned in one place
+# and nothing needs installing on the host. The official image already ships
+# hugo-extended, Go (for Hugo Modules), git and dart-sass, and runs as
+# uid 1000 so bind-mounted files stay owned by you.
+#
+#   docker compose up            # dev server on http://localhost:1313
+#   docker compose run --rm hugo <any hugo args>
+
+x-hugo: &hugo
+  image: ghcr.io/gohugoio/hugo:v0.166.0
+  volumes:
+    - .:/project
+    - go-mod-cache:/go/pkg/mod # Hugo Modules (the Congo theme)
+    - hugo-cache:/cache # Hugo's build cache
+
+services:
+  # Long-running dev server. Started by `docker compose up`.
+  server:
+    <<: *hugo
+    command:
+      - server
+      - --bind=0.0.0.0
+      - --baseURL=http://localhost:1313/
+      - --buildDrafts
+      - --disableFastRender
+      # Render to memory so the dev server never reads or writes public/.
+      # Otherwise a production `run --rm hugo --gc --minify` overwrites
+      # public/ with absolute https://dil4rd.me/ asset URLs and the server,
+      # which serves from disk, hands you a stylesheet-less page.
+      - --renderToMemory
+    environment:
+      # Congo picks appearance from these. Override to preview dark mode:
+      #   APPEARANCE=dark AUTO_APPEARANCE=false docker compose up -d server
+      HUGO_PARAMS_DEFAULTAPPEARANCE: ${APPEARANCE:-light}
+      HUGO_PARAMS_AUTOSWITCHAPPEARANCE: ${AUTO_APPEARANCE:-true}
+    ports:
+      - "1313:1313"
+
+  # One-shot Hugo CLI. Not started by `up` (see profiles).
+  # e.g. docker compose run --rm hugo new content posts/my-post.md
+  hugo:
+    <<: *hugo
+    profiles: [cli]
+
+  # Headless Chrome, for eyeballing a rendered page without a browser.
+  # Needs `docker compose up -d server` running first.
+  #   docker compose run --rm shot
+  #   docker compose run --rm shot --screenshot=/out/404.png http://localhost:1313/404.html
+  # host networking so the page's own localhost:1313 asset URLs resolve
+  # inside the container (Linux; on macOS/Windows use the server's URL).
+  shot:
+    image: zenika/alpine-chrome:latest
+    profiles: [cli]
+    network_mode: host
+    volumes:
+      - ./.preview:/out
+    entrypoint:
+      - chromium-browser
+      - --headless
+      - --no-sandbox
+      - --disable-gpu
+      - --hide-scrollbars
+      - --window-size=1100,700
+      - --virtual-time-budget=4000
+    command:
+      - --screenshot=/out/home.png
+      - http://localhost:1313/
+
+volumes:
+  go-mod-cache:
+  hugo-cache:

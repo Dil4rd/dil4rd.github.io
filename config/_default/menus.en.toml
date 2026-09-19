@@ -1,0 +1,13 @@
+# -- Main Menu --
+# Congo ships its own menus.en.toml (Blog / Categories / Tags). Hugo merges
+# theme config into site config key-by-key, so an empty file here would
+# inherit those entries. `_merge = "none"` blocks that, leaving no nav while
+# the site is a placeholder.
+_merge = "none"
+
+# Restore when the content sections come back:
+#
+# [[main]]
+#   name = "Posts"
+#   pageRef = "posts"
+#   weight = 10

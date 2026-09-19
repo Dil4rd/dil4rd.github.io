@@ -1,0 +1,14 @@
+# Hugo build output
+/public/
+/resources/_gen/
+/.hugo_build.lock
+hugo_stats.json
+
+# Local screenshots from the `shot` service
+/.preview/
+
+# Vendored Hugo modules (fetched at build time instead)
+/_vendor/
+
+# OS / editor noise
+.DS_Store
